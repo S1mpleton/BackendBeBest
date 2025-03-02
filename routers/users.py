@@ -12,10 +12,9 @@ router = APIRouter(
 
 class UserSchema(BaseModel):
     name: str
-    age: int = Field(ge=0, le=150)
+    age: int = Field(ge=14, le=150)
     mail: EmailStr
-    role: Union[str, None]
-    password: str
+    password: str = Field(min_length=5, max_length=60)
 
 
 
@@ -56,7 +55,7 @@ async def read_user(id_user: int):
 
 
 @router.post(
-    "/users/create",
+    "/create",
     summary="Make user in data base"
 )
 async def create_user(new_user: UserSchema):
@@ -64,8 +63,10 @@ async def create_user(new_user: UserSchema):
         Name = new_user.name,
         Age = new_user.age,
         Mail = new_user.mail,
-        Role = new_user.role,
+        Role = "user",
         Password = new_user.password,
         Created_at = date.today()
     ).save()
     return {"status": "ok"}
+
+

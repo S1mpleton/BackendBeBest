@@ -1,1 +1,1 @@
-from .data import db, UsersModel
+from .data import db, UsersModel, CoursesModel, ModuleModel, PurchasesModel

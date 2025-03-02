@@ -3,7 +3,9 @@ from enum import Enum
 import uvicorn
 from fastapi import FastAPI, HTTPException
 
-from routers import users
+from routers import users, courses, modules, purchase
+
+
 
 #GVT
 #токен
@@ -16,7 +18,9 @@ from routers import users
 app = FastAPI()
 
 app.include_router(users.router)
-
+app.include_router(courses.router)
+app.include_router(modules.router)
+app.include_router(purchase.router)
 
 
 
