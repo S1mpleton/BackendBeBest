@@ -54,6 +54,6 @@ async def create_purchase(new_purchase: PurchaseSchema):
     PurchasesModel(
         User_id = new_purchase.user_id,
         Course_id = new_purchase.course_id,
-        created_at = date.today() #with small symbol / fix later
+        Created_at = date.today() #with small symbol / fix later
     ).save()
     return {"status": "ok"}

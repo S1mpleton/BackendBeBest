@@ -1,6 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Path, Response
 from pydantic import BaseModel, Field, HttpUrl
 
+from typing import Union, Annotated
+from math import ceil
 from datetime import date
 from dataBase import ModuleModel
 
@@ -12,61 +14,65 @@ router = APIRouter(
 
 
 class ModuleSchema(BaseModel):
+    course_id: int = Field(ge=1)
     title: str = Field(max_length=150)
     description: str = Field(max_length=400)
-    course_id: int = Field(ge=1)
+    image_url: HttpUrl
     video_url: HttpUrl
 
 
 @router.get(
-    "/get/all",
+    "/getAll",
     summary="Get all modules"
 )
 async def read_modules():
-    all_modules = []
-    for module in ModuleModel.select():
-        all_modules.append({
-            "ID": module.ID,
-            "title": module.Title,
-            "description": module.Description,
-            "video_url": module.Video_URL,
-            "course_id": module.Course_id,
-            "created_at": module.Created_at
-        })
+    all_modules = [x.__data__ for x in ModuleModel.select()]
     return all_modules
 
 
+
 @router.get(
-    "/get/id/{id_module}",
+    "/getPageByCourse/{id_course}/{number_page}/{quantity_on_page}",
+    summary="Get page module by course"
+)
+async def read_modules(
+        id_course: Annotated[int, Path(ge=1)],
+        number_page: Annotated[int, Path(ge=1)],
+        quantity_on_page: Annotated[int, Path(ge=1)],
+        response: Response
+):
+    response.headers["quantity_pages"] = str(ceil(ModuleModel
+                                                  .select(ModuleModel.ID)
+                                                  .where(ModuleModel.Course == id_course)
+                                                  .count() / quantity_on_page))
+
+    modules = (
+        ModuleModel
+        .select()
+        .where(ModuleModel.Course == id_course)
+        .limit(quantity_on_page).offset((number_page-1)*quantity_on_page)
+        .order_by(ModuleModel.Created_at)
+    )
+
+    return [x.__data__  for x in modules]
+
+
+
+@router.get(
+    "/getById/{id_module}",
     summary="Get module for ID"
 )
-async def read_module_for_id(id_module: int):
+async def read_module_for_id(id_module: Annotated[int, Path(ge=1)]):
     module = ModuleModel.get_by_id(id_module)
-    return {
-        "ID": module.ID,
-        "title": module.Title,
-        "description": module.Description,
-        "video_url": module.Video_URL,
-        "course_id": module.Course_id,
-        "created_at": module.Created_at
-    }
+    return module.__data__
 
 
 @router.get(
-    "/get/course/id/{id_user}",
+    "/getByCourseId{id_course}",
     summary="Get a moduls on course ID"
 )
-async def read_modules_for_course_id(id_course: int):
-    courses_modules = []
-    for module in ModuleModel.select().where(ModuleModel.Course == id_course):
-        courses_modules.append({
-            "ID": module.ID,
-            "title": module.Title,
-            "description": module.Description,
-            "video_url": module.Video_URL,
-            "course_id": module.Course_id,
-            "created_at": module.Created_at
-        })
+async def read_modules_for_course_id(id_course: Annotated[int, Path(ge=1)]):
+    courses_modules = [x.__data__ for x in ModuleModel.select().where(ModuleModel.Course == id_course)]
     return courses_modules
 
 
@@ -82,6 +88,7 @@ async def create_module(new_module: ModuleSchema):
         Title = new_module.title,
         Description = new_module.description,
         Video_URL = new_module.video_url,
+        Image_URL=new_module.image_url,
         Created_at = date.today()
     ).save()
     return {"status": "ok"}

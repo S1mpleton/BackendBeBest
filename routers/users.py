@@ -1,8 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query, Path
 from pydantic import BaseModel, Field, EmailStr
 
 from datetime import date
-from typing import Union
+from typing import Union, Annotated
 from dataBase import UsersModel
 
 router = APIRouter(
@@ -14,44 +14,27 @@ class UserSchema(BaseModel):
     name: str
     age: int = Field(ge=14, le=150)
     mail: EmailStr
-    password: str = Field(min_length=5, max_length=60)
 
 
 
 @router.get(
-    "/get/all",
+    "/getAll",
     summary="Get all users"
 )
 async def read_users():
-    all_users = []
-    for user in UsersModel.select():
-        all_users.append({
-            "ID": user.ID,
-            "name": user.Name,
-            "age": user.Age,
-            "mail": user.Mail,
-            "role": user.Role,
-            "password": user.Password,
-            "created_at": user.Created_at
-        })
-    return all_users
+    all_users = UsersModel.select()
+    return [x.__data__ for x in all_users]
+
 
 
 @router.get(
-    "/get/id/{id_user}",
+    "/getById/{id_user}",
     summary="Get user for ID"
 )
-async def read_user(id_user: int):
-    user = UsersModel.get(ID=id_user)
-    return {
-        "ID": user.ID,
-        "name": user.Name,
-        "age": user.Age,
-        "mail": user.Mail,
-        "role": user.Role,
-        "password": user.Password,
-        "created_at": user.Created_at
-    }
+async def read_user(id_user: Annotated[int, Path(ge=1)]):
+    user = UsersModel.get_by_id(id_user)
+    return user.__data__
+
 
 
 @router.post(
@@ -62,9 +45,9 @@ async def create_user(new_user: UserSchema):
     UsersModel(
         Name = new_user.name,
         Age = new_user.age,
+        Sex = 0,
         Mail = new_user.mail,
         Role = "user",
-        Password = new_user.password,
         Created_at = date.today()
     ).save()
     return {"status": "ok"}

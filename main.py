@@ -12,6 +12,8 @@ from routers import users, courses, modules, purchase
 #UI
 #Яндекс трекер
 
+#Ручки поиска КУрсов и модулей по курсу
+
 
 
 
