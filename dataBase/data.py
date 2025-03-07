@@ -73,6 +73,6 @@ class CategoryModel(BaseModel):
 
 
 
-# if __name__ == "__main__":
-#     with db:
-#         db.create_tables([UsersModel, CoursesModel, PurchasesModel, ModuleModel, CategoryModel])
+if __name__ == "__main__":
+    with db:
+        db.create_tables([UsersModel, CoursesModel, PurchasesModel, ModuleModel, CategoryModel])

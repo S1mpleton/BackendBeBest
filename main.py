@@ -1,9 +1,9 @@
-from enum import Enum
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
-
 from routers import users, courses, modules, purchase
+
 
 
 
@@ -25,21 +25,21 @@ app.include_router(modules.router)
 app.include_router(purchase.router)
 
 
+origins = [
+    "*"
+]
 
-# class ModelName(str, Enum):
-#     alexnet = "alexn1et"
-#     resnet = "resnet"
-#     lenet = "lenet"
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# @app.get("/models/{model_name}")
-# async def get_model(model_name: ModelName):
-#     if model_name is ModelName.alexnet:
-#         return {"model_name": model_name, "message": "Deep Learning FTW!"}
-#
-#     if model_name.value == "lenet":
-#         return {"model_name": model_name, "message": "LeCNN all the images"}
-#
-#     return {"model_name": model_name, "message": "Have some residuals"}
+
+@app.get("/")
+async def get_model():
+    return {"status": "ok", "message": "This is head page!"}
 
 
 if __name__ == "__main__":

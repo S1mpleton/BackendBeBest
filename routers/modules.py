@@ -41,10 +41,10 @@ async def read_modules(
         quantity_on_page: Annotated[int, Path(ge=1)],
         response: Response
 ):
-    response.headers["quantity_pages"] = str(ceil(ModuleModel
-                                                  .select(ModuleModel.ID)
-                                                  .where(ModuleModel.Course == id_course)
-                                                  .count() / quantity_on_page))
+    total_elements = ceil(ModuleModel
+                            .select(ModuleModel.ID)
+                            .where(ModuleModel.Course == id_course)
+                            .count())
 
     modules = (
         ModuleModel
@@ -54,7 +54,14 @@ async def read_modules(
         .order_by(ModuleModel.Created_at)
     )
 
-    return [x.__data__  for x in modules]
+    return {
+        "data": [x.__data__ for x in modules],
+        "pagination": {
+            "current_page": number_page,
+            "total_pages": ceil(total_elements / quantity_on_page),
+            "total_elements": total_elements
+        }
+    }
 
 
 

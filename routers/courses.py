@@ -1,5 +1,5 @@
 from datetime import date
-from fastapi import APIRouter, Path,  Response
+from fastapi import APIRouter, Path, Body,  Response, HTTPException
 from pydantic import BaseModel, Field, HttpUrl
 from dataBase import CoursesModel
 from typing import Annotated
@@ -17,8 +17,8 @@ router = APIRouter(
 
 class CourseSchema(BaseModel):
     creator_id: int = Field(ge=1)
-    title: str = Field(max_length=150)
-    description: str = Field(max_length=400)
+    title: str = Field(max_length=150, default="title")
+    description: str = Field(max_length=400, default="description")
     image_url: HttpUrl
 
 
@@ -43,9 +43,8 @@ async def read_course_for_id(
         description: Annotated[str, Path(max_length=50)],
         response: Response
 ):
-    response.headers["quantity_pages"] = str(ceil(CoursesModel
-                                                  .select(CoursesModel.ID)
-                                                  .count() / quantity_on_page))
+    total_elements = int(ceil(CoursesModel
+             .select(CoursesModel.ID).count()))
 
     courses = (
         CoursesModel
@@ -57,7 +56,14 @@ async def read_course_for_id(
         .order_by(SQL("discount").desc())
     )
 
-    return [x.__data__ for x in courses]
+    return {
+        "data": [x.__data__ for x in courses],
+        "pagination":  {
+            "current_page": number_page,
+            "total_pages": ceil(total_elements / quantity_on_page),
+            "total_elements": total_elements
+            }
+    }
 
 
 
@@ -66,8 +72,15 @@ async def read_course_for_id(
     summary="Get course for ID"
 )
 async def read_course_for_id(id_course: Annotated[int, Path(ge=1)]):
-    course = CoursesModel.get_by_id(id_course)
-    return course.__data__
+    try:
+        course = CoursesModel.get_by_id(id_course)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="User not found")
+    else:
+        return course.__data__
+    finally:
+        pass
+
 
 
 
@@ -86,7 +99,7 @@ async def read_courses_for_user_creator_id(id_user: Annotated[int, Path(ge=1)]):
     "/create",
     summary="Make course in data base"
 )
-async def create_course(new_course: CourseSchema):
+async def create_course(new_course: Annotated[CourseSchema, Body()]):
     CoursesModel(
         Creator_id = new_course.creator_id,
         Title = new_course.title,
