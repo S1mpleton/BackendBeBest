@@ -12,7 +12,8 @@ from routers import users, courses, modules, purchase
 #UI
 #Яндекс трекер
 
-#Ручки поиска КУрсов и модулей по курсу
+
+
 
 
 
@@ -43,4 +44,4 @@ async def get_model():
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

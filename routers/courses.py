@@ -1,69 +1,32 @@
-from datetime import date
-from fastapi import APIRouter, Path, Body,  Response, HTTPException
-from pydantic import BaseModel, Field, HttpUrl
-from dataBase import CoursesModel
-from typing import Annotated
+from fastapi import APIRouter, Path, HTTPException, UploadFile, File, Depends, Query
 
-from math import ceil
-from peewee import fn, SQL
+from typing import Annotated, Union
 
-from fuzzywuzzy import fuzz
-from fuzzywuzzy import process
+from dataBase.repository import CourseRepository
+from routers.schemes import GetCourseSchema, CreateCourseSchema, PaginationCourseSchema
+
+
+
 
 router = APIRouter(
     prefix="/courses",
     tags=["Courses📺"]
 )
 
-class CourseSchema(BaseModel):
-    creator_id: int = Field(ge=1)
-    title: str = Field(max_length=150, default="title")
-    description: str = Field(max_length=400, default="description")
-    image_url: HttpUrl
+allowed_mime_types = ["image/jpeg", "image/png"]
 
 
 
 @router.get(
-    "/getAll",
-    summary="Get all courses"
-)
-async def read_courses():
-    all_courses = [x.__data__ for x in CoursesModel.select()]
-    return all_courses
-
-
-
-@router.get(
-    "/getPageByDescription/{number_page}/{quantity_on_page}/{description}",
+    "/getPageByDescription/{number_page}/{quantity_on_page}",
     summary="Get page courses for description"
 )
 async def read_course_for_id(
         number_page: Annotated[int, Path(ge=1)],
         quantity_on_page: Annotated[int, Path(ge=1)],
-        description: Annotated[str, Path(max_length=50)],
-        response: Response
-):
-    total_elements = int(ceil(CoursesModel
-             .select(CoursesModel.ID).count()))
-
-    courses = (
-        CoursesModel
-        .select(
-            CoursesModel,
-            fn.comparison(CoursesModel.Title, description).alias('discount')
-        )
-        .limit(quantity_on_page).offset((number_page - 1) * quantity_on_page)
-        .order_by(SQL("discount").desc())
-    )
-
-    return {
-        "data": [x.__data__ for x in courses],
-        "pagination":  {
-            "current_page": number_page,
-            "total_pages": ceil(total_elements / quantity_on_page),
-            "total_elements": total_elements
-            }
-    }
+        description: Union[Annotated[str, Path(max_length=50)], None] = None
+)-> PaginationCourseSchema:
+    return CourseRepository.get_by_page(number_page, quantity_on_page, description)
 
 
 
@@ -71,16 +34,15 @@ async def read_course_for_id(
     "/getById/{id_course}",
     summary="Get course for ID"
 )
-async def read_course_for_id(id_course: Annotated[int, Path(ge=1)]):
+async def read_course_for_id(id_course: Annotated[int, Path(ge=1)]) -> GetCourseSchema:
     try:
-        course = CoursesModel.get_by_id(id_course)
+        return CourseRepository.get_by_id(id_course)
+
     except Exception as e:
-        raise HTTPException(status_code=404, detail="User not found")
-    else:
-        return course.__data__
+        raise HTTPException(status_code=404, detail="Course not found")
+
     finally:
         pass
-
 
 
 
@@ -88,10 +50,15 @@ async def read_course_for_id(id_course: Annotated[int, Path(ge=1)]):
     "/getByIdCreator/{id_user}",
     summary="Get courses by their creator(user_id) ID"
 )
-async def read_courses_for_user_creator_id(id_user: Annotated[int, Path(ge=1)]):
-    user_courses = [x.__data__ for x in CoursesModel.select().where(CoursesModel.Creator == id_user)]
-    return user_courses
+async def read_courses_for_user_creator_id(id_user: Annotated[int, Path(ge=1)])-> list[GetCourseSchema]:
+    try:
+        return CourseRepository.get_by_creator_id(id_user)
 
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    finally:
+        pass
 
 
 
@@ -99,13 +66,42 @@ async def read_courses_for_user_creator_id(id_user: Annotated[int, Path(ge=1)]):
     "/create",
     summary="Make course in data base"
 )
-async def create_course(new_course: Annotated[CourseSchema, Body()]):
-    CoursesModel(
-        Creator_id = new_course.creator_id,
-        Title = new_course.title,
-        Description = new_course.description,
-        Image_URL = new_course.image_url,
-        Created_at = date.today()
-    ).save()
-    return {"status": "ok"}
+async def create_course(new_course: Annotated[CreateCourseSchema, Depends()]) -> GetCourseSchema:
+    if new_course.image.content_type not in allowed_mime_types:
+        raise HTTPException(status_code=400, detail="File type not supported. File isn't PNG, JPEG")
+
+    return CourseRepository.create(new_course)
+
+
+
+@router.put(
+    "/updateById/{id_course}",
+    summary="Update full course by id"
+)
+async def update_course(
+        id_course: Annotated[int, Path(ge=1)],
+        title: Annotated[Union[str, None], Query(max_length=50)] = None,
+        description: Annotated[Union[str, None], Query(max_length=600)] = None,
+        image: Annotated[Union[UploadFile, None], File()] = None
+):
+    return CourseRepository.update_course(id_course, title, description, image)
+
+
+
+@router.delete(
+    "/deleteById/{id_course}",
+    summary="Delete course by id"
+)
+async def delete_course(id_course: Annotated[int, Path(ge=1)]):
+    try:
+        CourseRepository.delete_by_id(id_course)
+
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    else:
+        return {"status": "ok"}
+
+    finally:
+        pass
 

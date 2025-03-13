@@ -9,7 +9,7 @@ from dataBase import ModuleModel
 
 router = APIRouter(
     prefix="/moduls",
-    tags=["moduls🎞"]
+    tags=["Moduls📼"]
 )
 
 
@@ -20,14 +20,6 @@ class ModuleSchema(BaseModel):
     image_url: HttpUrl
     video_url: HttpUrl
 
-
-@router.get(
-    "/getAll",
-    summary="Get all modules"
-)
-async def read_modules():
-    all_modules = [x.__data__ for x in ModuleModel.select()]
-    return all_modules
 
 
 
