@@ -7,9 +7,137 @@ from fastapi import UploadFile
 from peewee import fn, SQL
 from pydantic import HttpUrl
 
-from dataBase import CoursesModel, ImageFormatModel, ImageCourseModel, ModuleModel, ImageModuleModel
+from dataBase import CoursesModel, ImageFormatModel, ImageCourseModel, ModuleModel, ImageModuleModel, UsersModel, \
+    ImageUserModel
 from routers.schemes import CreateCourseSchema, FeaturedImageSchema, GetCourseSchema, PaginationCourseSchema, \
-    PaginationSchema, PaginationModuleSchema, GetModuleSchema, CreateModuleSchema
+    PaginationSchema, PaginationModuleSchema, GetModuleSchema, CreateModuleSchema, GetUserSchema, CreateUserSchema, \
+    UserRole, UpdateUserSchema
+
+
+class UserRepository:
+    @classmethod
+    def get_all(cls):
+        pass
+
+    @classmethod
+    def get_image_by_user(cls, user: UsersModel) -> FeaturedImageSchema:
+        feature = (
+            ImageUserModel.select(ImageUserModel, ImageFormatModel)
+            .join(ImageFormatModel)
+            .where(ImageUserModel.user == user)
+        )
+
+        images = {}
+        for f in feature:
+            images[f.format.format_name] = f.image_path
+
+        return FeaturedImageSchema(**images)
+
+    @classmethod
+    def remove_image_by_user(cls, user: UsersModel):
+        images = ImageUserModel.select().where(ImageUserModel.user == user)
+
+        for image in images:
+            image.delete_instance(recursive=True, delete_nullable=True)
+
+        if bool(images):
+            for form in ImageFormatModel.select():
+                file_name = f"{user.id}-user-{form.format_name}-{user.created_at}.jpg"
+                file_path = os.path.join("resources", "images", file_name)
+
+                os.remove(file_path)
+
+    @classmethod
+    def save_images(cls, user: UsersModel, image_data: UploadFile):
+        for form in ImageFormatModel.select():
+
+            file_name = f"{user.id}-user-{form.format_name}-{user.created_at}.jpg"
+            file_path = os.path.join("resources", "images", file_name)
+
+            img = Image.open(image_data.file)
+
+            if form.format_name != "original":
+                img = img.resize((form.width, form.height))
+
+            img.save(file_path)
+
+            ImageUserModel.create(
+                format=form.id,
+                image_path=file_name,
+                user_id=user
+            )
+
+
+
+    @classmethod
+    def get_by_id(cls, id_user: int) -> GetUserSchema:
+        user = UsersModel.get_by_id(id_user)
+
+        featured_image = UserRepository.get_image_by_user(user)
+
+        user.__data__["featuredImage"] = featured_image
+
+        return GetUserSchema(**user.__data__)
+
+    @classmethod
+    def create(cls, data: CreateUserSchema) -> GetUserSchema:
+        user = UsersModel.create(
+            mail=data.mail,
+            password=data.password,
+            name=data.name,
+            role=UserRole.user,
+            created_at=datetime.date.today()
+        )
+
+        featured_image = UserRepository.get_image_by_user(user)
+
+        user.__data__["featuredImage"] = featured_image
+
+        return GetUserSchema(**user.__data__)
+
+    @classmethod
+    def delete_by_id(cls, id_user):
+        user = UsersModel.get_by_id(id_user)
+
+        UserRepository.remove_image_by_user(user)
+
+        courses = CoursesModel.select().where(CoursesModel.creator == user)
+        for course in courses:
+            CourseRepository.delete_by_id(course.id)
+
+        user.delete_instance(recursive=True, delete_nullable=True)
+
+    @classmethod
+    def update_user(cls, id_user: int, data: UpdateUserSchema) -> GetUserSchema:
+        user = UsersModel.get_by_id(id_user)
+
+        if data.age:
+            user.age = data.age
+
+        if data.name:
+            user.name = data.name
+
+        if data.mail:
+            user.mail = data.mail
+
+        if data.password:
+            user.password = data.password
+
+        if data.sex:
+            user.sex = data.sex
+
+        if data.image:
+            UserRepository.remove_image_by_user(user)
+            UserRepository.save_images(user, data.image)
+
+        user.save()
+
+        featured_image = UserRepository.get_image_by_user(user)
+        user.__data__["featuredImage"] = featured_image
+
+        return GetUserSchema(**user.__data__)
+
+
 
 
 class ModulRepository:

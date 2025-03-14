@@ -1,7 +1,9 @@
 from datetime import date
+from enum import Enum
+from typing import Union, Annotated
 
 from fastapi import UploadFile, File
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, EmailStr
 
 
 
@@ -9,8 +11,8 @@ from pydantic import BaseModel, Field, HttpUrl
 allowed_mime_types = ["image/jpeg", "image/png"]
 
 class FeaturedImageSchema(BaseModel):
-    original: str
-    small: str
+    original: Annotated[Union[str, None], Field()] = None
+    small:  Annotated[Union[str, None], Field()] = None
 
 class PaginationSchema(BaseModel):
     current_page: int
@@ -57,3 +59,38 @@ class CreateModuleSchema(ModuleSchema):
 class PaginationModuleSchema(BaseModel):
     data: list[GetModuleSchema]
     pagination: PaginationSchema
+
+
+# --- Users schemes ---
+
+class UserRole(str, Enum):
+    user = "user"
+    editor = "editor"
+    administrator = "administrator"
+
+
+class UserSchema(BaseModel):
+    name: str = Field(max_length=25, default="Гость")
+    mail: EmailStr
+
+
+class CreateUserSchema(UserSchema):
+    password: str = Field(max_length=60)
+
+
+class GetUserSchema(UserSchema):
+    id: int = Field(ge=1)
+    age: Annotated[Union[int, None], Field(ge=14, le=150)] = None
+    sex: Annotated[Union[int, None], Field(ge=0, le=2)] = None
+    password: str = Field(max_length=60)
+    role: UserRole = Field(default=UserRole.user)
+    created_at: date
+    featuredImage: FeaturedImageSchema
+
+class UpdateUserSchema(BaseModel):
+    name: Annotated[Union[str, None], Field(max_length=25)] = None
+    mail: Annotated[Union[EmailStr, None], Field()] = None
+    password: Annotated[Union[str, None], Field(max_length=60)] = None
+    age: Annotated[Union[int, None], Field(ge=14, le=150)] = None
+    sex: Annotated[Union[int, None], Field(ge=0, le=2)] = None
+    image: Annotated[Union[UploadFile, None], File()] = None
