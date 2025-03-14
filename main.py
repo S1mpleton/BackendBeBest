@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import uvicorn
-from routers import users, courses, modules, purchase
+from routers import users, courses, modules, purchase, images
 
 
 
@@ -23,6 +23,7 @@ app = FastAPI()
 app.include_router(users.router)
 app.include_router(courses.router)
 app.include_router(modules.router)
+app.include_router(images.router)
 app.include_router(purchase.router)
 
 

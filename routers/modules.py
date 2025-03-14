@@ -1,59 +1,33 @@
-from fastapi import APIRouter, Path, Response
+from fastapi import APIRouter, Path, Response, Query, File, UploadFile, HTTPException
+from fastapi.params import Depends
 from pydantic import BaseModel, Field, HttpUrl
 
 from typing import Union, Annotated
-from math import ceil
-from datetime import date
-from dataBase import ModuleModel
+from dataBase.repository import ModulRepository
+from routers.schemes import ModuleSchema, PaginationModuleSchema, CreateModuleSchema, GetModuleSchema, \
+    allowed_mime_types
+
+
 
 
 router = APIRouter(
-    prefix="/moduls",
-    tags=["Moduls📼"]
+    prefix="/modules",
+    tags=["Modules📼"]
 )
-
-
-class ModuleSchema(BaseModel):
-    course_id: int = Field(ge=1)
-    title: str = Field(max_length=150)
-    description: str = Field(max_length=400)
-    image_url: HttpUrl
-    video_url: HttpUrl
-
 
 
 
 @router.get(
-    "/getPageByCourse/{id_course}/{number_page}/{quantity_on_page}",
+    "/getPageByCourseAndDescription/{id_course}/{number_page}/{quantity_on_page}",
     summary="Get page module by course"
 )
 async def read_modules(
         id_course: Annotated[int, Path(ge=1)],
         number_page: Annotated[int, Path(ge=1)],
         quantity_on_page: Annotated[int, Path(ge=1)],
-        response: Response
-):
-    total_elements = ceil(ModuleModel
-                            .select(ModuleModel.ID)
-                            .where(ModuleModel.Course == id_course)
-                            .count())
-
-    modules = (
-        ModuleModel
-        .select()
-        .where(ModuleModel.Course == id_course)
-        .limit(quantity_on_page).offset((number_page-1)*quantity_on_page)
-        .order_by(ModuleModel.Created_at)
-    )
-
-    return {
-        "data": [x.__data__ for x in modules],
-        "pagination": {
-            "current_page": number_page,
-            "total_pages": ceil(total_elements / quantity_on_page),
-            "total_elements": total_elements
-        }
-    }
+        description: Union[Annotated[str, Path(max_length=50)], None] = None
+) -> PaginationModuleSchema:
+    return ModulRepository.get_by_page(id_course, number_page, quantity_on_page, description)
 
 
 
@@ -62,18 +36,7 @@ async def read_modules(
     summary="Get module for ID"
 )
 async def read_module_for_id(id_module: Annotated[int, Path(ge=1)]):
-    module = ModuleModel.get_by_id(id_module)
-    return module.__data__
-
-
-@router.get(
-    "/getByCourseId{id_course}",
-    summary="Get a moduls on course ID"
-)
-async def read_modules_for_course_id(id_course: Annotated[int, Path(ge=1)]):
-    courses_modules = [x.__data__ for x in ModuleModel.select().where(ModuleModel.Course == id_course)]
-    return courses_modules
-
+    return ModulRepository.get_by_id(id_module)
 
 
 
@@ -81,13 +44,48 @@ async def read_modules_for_course_id(id_course: Annotated[int, Path(ge=1)]):
     "/create",
     summary="Make modul in data base"
 )
-async def create_module(new_module: ModuleSchema):
-    ModuleModel(
-        Course_id = new_module.course_id,
-        Title = new_module.title,
-        Description = new_module.description,
-        Video_URL = new_module.video_url,
-        Image_URL=new_module.image_url,
-        Created_at = date.today()
-    ).save()
-    return {"status": "ok"}
+async def create_module(new_module: Annotated[CreateModuleSchema, Depends()]) -> GetModuleSchema:
+    if new_module.image.content_type not in allowed_mime_types:
+        raise HTTPException(status_code=400, detail="File type not supported. File isn't PNG, JPEG")
+
+    return ModulRepository.create(new_module)
+
+
+
+
+@router.put(
+    "/updateById/{id_module}",
+    summary="Update module by id"
+)
+async def update_course(
+        id_module: Annotated[int, Path(ge=1)],
+        title: Annotated[Union[str, None], Query(max_length=50)] = None,
+        description: Annotated[Union[str, None], Query(max_length=600)] = None,
+        video_url: Annotated[Union[HttpUrl, None], Query()] = None,
+        image: Annotated[Union[UploadFile, None], File()] = None
+) -> GetModuleSchema:
+    return ModulRepository.update_course(id_module, title, description, video_url, image)
+
+
+
+
+@router.delete(
+    "/deleteById/{id_module}",
+    summary="Delete module by id"
+)
+async def delete_course(id_module: Annotated[int, Path(ge=1)]):
+    try:
+        ModulRepository.delete_by_id(id_module)
+
+
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Module not found")
+        pass
+
+    else:
+        return {"status": "ok"}
+
+    finally:
+        pass
+
+

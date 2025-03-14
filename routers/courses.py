@@ -3,17 +3,12 @@ from fastapi import APIRouter, Path, HTTPException, UploadFile, File, Depends, Q
 from typing import Annotated, Union
 
 from dataBase.repository import CourseRepository
-from routers.schemes import GetCourseSchema, CreateCourseSchema, PaginationCourseSchema
-
-
-
+from routers.schemes import GetCourseSchema, CreateCourseSchema, PaginationCourseSchema, allowed_mime_types
 
 router = APIRouter(
     prefix="/courses",
     tags=["Courses📺"]
 )
-
-allowed_mime_types = ["image/jpeg", "image/png"]
 
 
 
@@ -90,7 +85,7 @@ async def update_course(
 
 @router.delete(
     "/deleteById/{id_course}",
-    summary="Delete course by id"
+    summary="Delete course by id, also deleted all modules, in this course"
 )
 async def delete_course(id_course: Annotated[int, Path(ge=1)]):
     try:
