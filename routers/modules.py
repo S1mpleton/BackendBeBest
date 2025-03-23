@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Path, Response, Query, File, UploadFile, HTTPException
+from fastapi import APIRouter, Path, Query, File, UploadFile
 from fastapi.params import Depends
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import HttpUrl
 
 from typing import Union, Annotated
 from dataBase.repository import ModulRepository
-from routers.schemes import ModuleSchema, PaginationModuleSchema, CreateModuleSchema, GetModuleSchema, \
-    allowed_mime_types
+from routers.schemes import PaginationModuleSchema, CreateModuleSchema, GetModuleSchema
 
 
 
@@ -45,15 +44,12 @@ async def read_module_for_id(id_module: Annotated[int, Path(ge=1)]):
     summary="Make modul in data base"
 )
 async def create_module(new_module: Annotated[CreateModuleSchema, Depends()]) -> GetModuleSchema:
-    if new_module.image.content_type not in allowed_mime_types:
-        raise HTTPException(status_code=400, detail="File type not supported. File isn't PNG, JPEG")
-
     return ModulRepository.create(new_module)
 
 
 
 
-@router.put(
+@router.patch(
     "/updateById/{id_module}",
     summary="Update module by id"
 )
@@ -64,7 +60,7 @@ async def update_course(
         video_url: Annotated[Union[HttpUrl, None], Query()] = None,
         image: Annotated[Union[UploadFile, None], File()] = None
 ) -> GetModuleSchema:
-    return ModulRepository.update_course(id_module, title, description, video_url, image)
+    return ModulRepository.update_module(id_module, title, description, video_url, image)
 
 
 
@@ -74,18 +70,9 @@ async def update_course(
     summary="Delete module by id"
 )
 async def delete_course(id_module: Annotated[int, Path(ge=1)]):
-    try:
-        ModulRepository.delete_by_id(id_module)
+    ModulRepository.delete_by_id(id_module)
+    return {"status": "ok"}
 
 
-    except Exception as e:
-        raise HTTPException(status_code=404, detail="Module not found")
-        pass
-
-    else:
-        return {"status": "ok"}
-
-    finally:
-        pass
 
 

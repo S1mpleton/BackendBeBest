@@ -8,8 +8,6 @@ from pydantic import BaseModel, Field, HttpUrl, EmailStr
 
 
 
-allowed_mime_types = ["image/jpeg", "image/png"]
-
 class FeaturedImageSchema(BaseModel):
     original: Annotated[Union[str, None], Field()] = None
     small:  Annotated[Union[str, None], Field()] = None
@@ -73,6 +71,8 @@ class UserSchema(BaseModel):
     name: str = Field(max_length=25, default="Гость")
     mail: EmailStr
 
+class LoginUserSchema(UserSchema):
+    id: int = Field(ge=1)
 
 class CreateUserSchema(UserSchema):
     password: str = Field(max_length=60)
@@ -82,7 +82,6 @@ class GetUserSchema(UserSchema):
     id: int = Field(ge=1)
     age: Annotated[Union[int, None], Field(ge=14, le=150)] = None
     sex: Annotated[Union[int, None], Field(ge=0, le=2)] = None
-    password: str = Field(max_length=60)
     role: UserRole = Field(default=UserRole.user)
     created_at: date
     featuredImage: FeaturedImageSchema

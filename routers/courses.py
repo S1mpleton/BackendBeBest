@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Path, HTTPException, UploadFile, File, Depends, Query
+from fastapi import APIRouter, Path, UploadFile, File, Depends, Query
 
 from typing import Annotated, Union
 
 from dataBase.repository import CourseRepository
-from routers.schemes import GetCourseSchema, CreateCourseSchema, PaginationCourseSchema, allowed_mime_types
+from routers.schemes import GetCourseSchema, CreateCourseSchema, PaginationCourseSchema
 
 router = APIRouter(
     prefix="/courses",
@@ -30,14 +30,8 @@ async def read_course_for_id(
     summary="Get course for ID"
 )
 async def read_course_for_id(id_course: Annotated[int, Path(ge=1)]) -> GetCourseSchema:
-    try:
-        return CourseRepository.get_by_id(id_course)
+    return CourseRepository.get_by_id(id_course)
 
-    except Exception as e:
-        raise HTTPException(status_code=404, detail="Course not found")
-
-    finally:
-        pass
 
 
 
@@ -46,14 +40,8 @@ async def read_course_for_id(id_course: Annotated[int, Path(ge=1)]) -> GetCourse
     summary="Get courses by their creator(user_id) ID"
 )
 async def read_courses_for_user_creator_id(id_user: Annotated[int, Path(ge=1)])-> list[GetCourseSchema]:
-    try:
-        return CourseRepository.get_by_creator_id(id_user)
+    return CourseRepository.get_by_creator_id(id_user)
 
-    except Exception as e:
-        raise HTTPException(status_code=404, detail="Course not found")
-
-    finally:
-        pass
 
 
 
@@ -62,14 +50,11 @@ async def read_courses_for_user_creator_id(id_user: Annotated[int, Path(ge=1)])-
     summary="Make course in data base"
 )
 async def create_course(new_course: Annotated[CreateCourseSchema, Depends()]) -> GetCourseSchema:
-    if new_course.image.content_type not in allowed_mime_types:
-        raise HTTPException(status_code=400, detail="File type not supported. File isn't PNG, JPEG")
-
     return CourseRepository.create(new_course)
 
 
 
-@router.put(
+@router.patch(
     "/updateById/{id_course}",
     summary="Update full course by id"
 )
@@ -88,15 +73,5 @@ async def update_course(
     summary="Delete course by id, also deleted all modules, in this course"
 )
 async def delete_course(id_course: Annotated[int, Path(ge=1)]):
-    try:
-        CourseRepository.delete_by_id(id_course)
-
-    except Exception as e:
-        raise HTTPException(status_code=404, detail="Course not found")
-
-    else:
-        return {"status": "ok"}
-
-    finally:
-        pass
-
+    CourseRepository.delete_by_id(id_course)
+    return {"status": "ok"}

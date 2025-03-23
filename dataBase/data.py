@@ -3,10 +3,14 @@ from peewee import *
 from fuzzywuzzy import fuzz
 import datetime
 
+from config import DB_DIR
 
 
 
-db = SqliteDatabase('dataBase/data.db')
+
+DB_PATH = DB_DIR.joinpath("data.db")
+
+db = SqliteDatabase(DB_PATH)
 
 
 
@@ -29,8 +33,8 @@ class BaseModel(Model):
 
 
 class UsersModel(BaseModel):
-    mail = CharField(null=False, max_length=100)
-    password = CharField(null=False, max_length=100)
+    mail = CharField(null=False, max_length=100, unique=True)
+    hashed_password = CharField(null=False, max_length=800)
     role = CharField(null=False, max_length=25, default="user")
 
     name = CharField(null=False, max_length=25, default="Гость")
@@ -88,7 +92,7 @@ class BelongingCategoryModel(BaseModel):
 
 
 class ImageFormatModel(BaseModel):
-    format_name = CharField(null=False, max_length=50)
+    format_name = CharField(null=False, max_length=50, unique=True)
     width = IntegerField(null=False)
     height = IntegerField(null=False)
     description = CharField(null=True, max_length=100)
@@ -98,7 +102,7 @@ class ImageFormatModel(BaseModel):
 
 class ImageModel(BaseModel):
     format = ForeignKeyField(ImageFormatModel)
-    image_path = CharField(null=False, max_length=200)
+    image_path = CharField(null=False, max_length=200, unique=True)
 
 
 class ImageCourseModel(ImageModel):
