@@ -13,14 +13,18 @@ router = APIRouter(
 
 
 @router.get(
-    "/getPageByDescription/{number_page}/{quantity_on_page}",
+    "/getPageByDescription",
     summary="Get page courses for description"
 )
 async def read_course_for_id(
-        number_page: Annotated[int, Path(ge=1)],
-        quantity_on_page: Annotated[int, Path(ge=1)],
-        description: Union[Annotated[str, Path(max_length=50)], None] = None
+        number_page: Annotated[Union[int, None], Query(ge=1)] = None,
+        quantity_on_page: Annotated[Union[int, None], Query(ge=1)] = None,
+        description: Annotated[Union[str, None], Query(max_length=50)] = None
 )-> PaginationCourseSchema:
+    if not number_page or not quantity_on_page:
+        number_page = 1
+        quantity_on_page = 30
+
     return CourseRepository.get_by_page(number_page, quantity_on_page, description)
 
 

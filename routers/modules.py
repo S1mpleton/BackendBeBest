@@ -17,15 +17,19 @@ router = APIRouter(
 
 
 @router.get(
-    "/getPageByCourseAndDescription/{id_course}/{number_page}/{quantity_on_page}",
+    "/getPageByCourseAndDescription/{id_course}",
     summary="Get page module by course"
 )
 async def read_modules(
         id_course: Annotated[int, Path(ge=1)],
-        number_page: Annotated[int, Path(ge=1)],
-        quantity_on_page: Annotated[int, Path(ge=1)],
-        description: Union[Annotated[str, Path(max_length=50)], None] = None
+        number_page: Annotated[Union[int, None], Path(ge=1)] = None,
+        quantity_on_page: Annotated[Union[int, None], Path(ge=1)] = None,
+        description: Annotated[Union[str, None], Path(max_length=50)] = None
 ) -> PaginationModuleSchema:
+    if not number_page or not quantity_on_page:
+        number_page = 1
+        quantity_on_page = 30
+
     return ModulRepository.get_by_page(id_course, number_page, quantity_on_page, description)
 
 
