@@ -1,8 +1,9 @@
 import os.path
-from typing import Annotated
 
-from fastapi import Path, APIRouter
+from fastapi import APIRouter
 from fastapi.responses import FileResponse
+
+from .repository import ImagesRepository
 
 router = APIRouter(
     prefix="/images",
@@ -14,7 +15,6 @@ router = APIRouter(
     summary="Get image for name"
 )
 async def read_image_for_name(image_name: str)-> FileResponse:
-    image_path = os.path.join("resources", "images", image_name)
-    return FileResponse(image_path)
+    return ImagesRepository.get_response_image(image_name)
 
 

@@ -33,7 +33,7 @@ class BaseModel(Model):
 
 
 class UsersModel(BaseModel):
-    mail = CharField(null=False, max_length=100, unique=True)
+    email = CharField(null=False, max_length=100, unique=True)
     hashed_password = CharField(null=False, max_length=800)
     role = CharField(null=False, max_length=25, default="user")
 
@@ -106,19 +106,19 @@ class ImageModel(BaseModel):
 
 
 class ImageCourseModel(ImageModel):
-    course = ForeignKeyField(CoursesModel)
+    object = ForeignKeyField(CoursesModel)
     class Meta:
         db_table = "ImagesCourse"
 
 
 class ImageModuleModel(ImageModel):
-    module = ForeignKeyField(ModuleModel)
+    object = ForeignKeyField(ModuleModel)
     class Meta:
         db_table = "ImagesModule"
 
 
 class ImageUserModel(ImageModel):
-    user = ForeignKeyField(UsersModel)
+    object = ForeignKeyField(UsersModel)
     class Meta:
         db_table = "ImagesUser"
 

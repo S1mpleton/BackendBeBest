@@ -2,8 +2,8 @@ from fastapi import APIRouter, Path, UploadFile, File, Depends, Query
 
 from typing import Annotated, Union
 
-from dataBase.repository import CourseRepository
-from routers.schemes import GetCourseSchema, CreateCourseSchema, PaginationCourseSchema
+from routers.courses.repository import CourseRepository
+from routers.courses.schemes import PaginationCourseSchema, GetCourseSchema, CreateCourseSchema, UpdateCourseSchema
 
 router = APIRouter(
     prefix="/courses",
@@ -62,13 +62,8 @@ async def create_course(new_course: Annotated[CreateCourseSchema, Depends()]) ->
     "/updateById/{id_course}",
     summary="Update full course by id"
 )
-async def update_course(
-        id_course: Annotated[int, Path(ge=1)],
-        title: Annotated[Union[str, None], Query(max_length=50)] = None,
-        description: Annotated[Union[str, None], Query(max_length=600)] = None,
-        image: Annotated[Union[UploadFile, None], File()] = None
-):
-    return CourseRepository.update_course(id_course, title, description, image)
+async def update_course(course: Annotated[UpdateCourseSchema, Depends()]) -> GetCourseSchema:
+    return CourseRepository.update_course(course)
 
 
 

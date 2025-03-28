@@ -3,11 +3,9 @@ from fastapi.params import Depends
 from pydantic import HttpUrl
 
 from typing import Union, Annotated
-from dataBase.repository import ModulRepository
-from routers.schemes import PaginationModuleSchema, CreateModuleSchema, GetModuleSchema
 
-
-
+from routers.modules.repository import ModulRepository
+from routers.modules.schemes import PaginationModuleSchema, CreateModuleSchema, GetModuleSchema, UpdateModuleSchema
 
 router = APIRouter(
     prefix="/modules",
@@ -38,7 +36,7 @@ async def read_modules(
     "/getById/{id_module}",
     summary="Get module for ID"
 )
-async def read_module_for_id(id_module: Annotated[int, Path(ge=1)]):
+async def read_module_for_id(id_module: Annotated[int, Path(ge=1)]) -> GetModuleSchema:
     return ModulRepository.get_by_id(id_module)
 
 
@@ -57,14 +55,8 @@ async def create_module(new_module: Annotated[CreateModuleSchema, Depends()]) ->
     "/updateById/{id_module}",
     summary="Update module by id"
 )
-async def update_course(
-        id_module: Annotated[int, Path(ge=1)],
-        title: Annotated[Union[str, None], Query(max_length=50)] = None,
-        description: Annotated[Union[str, None], Query(max_length=600)] = None,
-        video_url: Annotated[Union[HttpUrl, None], Query()] = None,
-        image: Annotated[Union[UploadFile, None], File()] = None
-) -> GetModuleSchema:
-    return ModulRepository.update_module(id_module, title, description, video_url, image)
+async def update_course(module: Annotated[UpdateModuleSchema, Depends()]) -> GetModuleSchema:
+    return ModulRepository.update_module(module)
 
 
 
