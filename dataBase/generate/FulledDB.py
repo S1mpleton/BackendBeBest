@@ -17,6 +17,9 @@ fake = Faker()
 IMAGES_PATH = DB_DIR.joinpath("generate").joinpath("Images")
 
 def save_images(model_id: int, model_type: str):
+
+    p = str(random.randint(1, 22)) + ".jpeg"
+
     for form in ImageFormatModel.select():
         file_path = get_image_path(
             id_model=model_id,
@@ -24,7 +27,7 @@ def save_images(model_id: int, model_type: str):
             format_name=form.format_name
         )
 
-        img = Image.open(IMAGES_PATH.joinpath(str(random.randint(1, 22))+".jpeg"))
+        img = Image.open(IMAGES_PATH.joinpath(p))
 
         if form.format_name != ORIGINAL_FORMAT_IMAGE:
             img.thumbnail((form.width, form.height))
@@ -94,11 +97,12 @@ def add_user():
 
 
 
-def run():
-    for _ in range(1):
+def run(how_users: int):
+    for _ in range(how_users):
         add_user()
 
 
 if __name__ == "__main__":
-    run()
+    users_count = 100
+    run(users_count)
 
