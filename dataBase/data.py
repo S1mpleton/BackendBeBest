@@ -3,12 +3,54 @@ from peewee import *
 from fuzzywuzzy import fuzz
 import datetime
 
+from pydantic import BaseModel
+
 from config import DB_DIR
 
 
 
 
 DB_PATH = DB_DIR.joinpath("data.db")
+
+
+class ImageFormatSchema(BaseModel):
+    format_name: str
+    width: int
+    height: int
+
+
+ORIGINAL_FORMAT_IMAGE = ImageFormatSchema(
+    format_name="original",
+    width=0,
+    height=0
+)
+
+SMALL_FORMAT_IMAGE = ImageFormatSchema(
+    format_name="small",
+    width=400,
+    height=300
+)
+
+
+
+
+HEALTH_CATEGORY = "Health"
+FINANCE_CATEGORY = "Finance"
+SPIRITUALITY_CATEGORY = "Spirituality"
+EDUCATION_CATEGORY = "Education"
+LEISURE_CATEGORY = "Leisure"
+
+
+CATEGORY_COURSES = {
+    HEALTH_CATEGORY: "Здоровье",
+    FINANCE_CATEGORY: "Финансы",
+    SPIRITUALITY_CATEGORY: "Духовность",
+    EDUCATION_CATEGORY: "Образование",
+    LEISURE_CATEGORY: "Досуг"
+}
+
+
+
 
 db = SqliteDatabase(DB_PATH)
 
@@ -132,3 +174,15 @@ if __name__ == "__main__":
             ModuleModel, CategoryModel, BelongingCategoryModel,
             ImageCourseModel, ImageModuleModel, ImageUserModel, ImageFormatModel
         ])
+
+    for category in CATEGORY_COURSES:
+        CategoryModel.create(category=CATEGORY_COURSES.get(category))
+
+    for image_format in [ORIGINAL_FORMAT_IMAGE, SMALL_FORMAT_IMAGE]:
+        ImageFormatModel.create(
+            format_name=image_format.format_name,
+            width=image_format.width,
+            height=image_format.height,
+            description="Format"
+        )
+

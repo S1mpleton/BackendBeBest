@@ -7,7 +7,7 @@ from .repository import ImagesRepository
 
 router = APIRouter(
     prefix="/images",
-    tags=["Images🎨"]
+    tags=["images🎨"]
 )
 
 @router.get(

@@ -6,10 +6,9 @@ from fastapi.responses import FileResponse
 
 from config import IMAGE_DIR
 from dataBase import ImageFormatModel
+from dataBase.data import ORIGINAL_FORMAT_IMAGE
 from routers.dependencies import get_image_path, FeaturedImageSchema, get_featured_image
 from routers.images.db_requests import IMAGE_MODEL_BY_TYPE, ImageRequestsDB
-
-ORIGINAL_FORMAT_IMAGE = "original"
 
 
 
@@ -31,7 +30,7 @@ class ImagesRepository:
 
             img = Image.open(image_data.file)
 
-            if form.format_name != ORIGINAL_FORMAT_IMAGE:
+            if form.format_name != ORIGINAL_FORMAT_IMAGE.format_name:
                 img.thumbnail((form.width, form.height))
 
             img.save(file_path)

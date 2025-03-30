@@ -1,5 +1,5 @@
 from dataBase import ImageCourseModel, ImageUserModel, ImageModuleModel
-from dataBase.data import ImageModel, ImageFormatModel, CoursesModel
+from dataBase.data import ImageFormatModel
 from routers.dependencies import USER_TYPE, MODULE_TYPE, COURSE_TYPE
 
 

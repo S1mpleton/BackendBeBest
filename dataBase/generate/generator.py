@@ -5,7 +5,7 @@ import datetime
 from auth.hashing import get_password_hash
 import random
 
-from config import IMAGE_DIR, DB_DIR
+from config import DB_DIR
 from dataBase import CoursesModel, UsersModel
 from dataBase.data import BelongingCategoryModel, ImageFormatModel, ModuleModel
 from routers.dependencies import get_image_path, COURSE_TYPE, MODULE_TYPE, USER_TYPE
@@ -14,7 +14,15 @@ from routers.images.repository import ORIGINAL_FORMAT_IMAGE
 
 fake = Faker()
 
-IMAGES_PATH = DB_DIR.joinpath("generate").joinpath("Images")
+IMAGES_PATH = DB_DIR.joinpath("generate").joinpath("images")
+
+COUNT_USERS = 100
+CHANCE_USER_PHOTO_CREATE = 1/5
+CHANCE_USER_COURSE_CREATE = 1/10
+
+MIN_MODULES_IN_COURSE = 0
+MAX_MODULES_IN_COURSE = 10
+
 
 def save_images(model_id: int, model_type: str):
 
@@ -29,7 +37,7 @@ def save_images(model_id: int, model_type: str):
 
         img = Image.open(IMAGES_PATH.joinpath(p))
 
-        if form.format_name != ORIGINAL_FORMAT_IMAGE:
+        if form.format_name != ORIGINAL_FORMAT_IMAGE.format_name:
             img.thumbnail((form.width, form.height))
 
         img.save(file_path)
@@ -71,7 +79,7 @@ def add_course(user: UsersModel):
 
     add_category(course)
     save_images(course.id, COURSE_TYPE)
-    for i in range(random.randint(0, 20)):
+    for i in range(random.randint(MIN_MODULES_IN_COURSE, MAX_MODULES_IN_COURSE)):
         add_module(course)
 
 def add_user():
@@ -90,9 +98,10 @@ def add_user():
         sex=gender,
         created_at=(datetime.date.today() - datetime.timedelta(days=random.randint(0, 2000)))
     )
-    if random.randint(1, 5) == 1:
+    if random.random() <= CHANCE_USER_PHOTO_CREATE:
         save_images(user.id, USER_TYPE)
-    if random.randint(1, 6) == 1:
+
+    if random.random() <= CHANCE_USER_COURSE_CREATE:
         add_course(user)
 
 
@@ -103,6 +112,6 @@ def run(how_users: int):
 
 
 if __name__ == "__main__":
-    users_count = 100
-    run(users_count)
+    run(COUNT_USERS)
+
 
