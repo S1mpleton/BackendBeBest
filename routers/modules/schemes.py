@@ -4,9 +4,7 @@ from typing import Annotated, Union
 from fastapi import UploadFile, File, Path, Query
 from pydantic import BaseModel, Field, HttpUrl
 
-from routers.dependencies import FeaturedImageSchema, PaginationSchema
-
-
+from routers.dependencies import FeaturedImageSchema, PaginationSchema, GetPaginationSchema
 
 
 class ModuleSchema(BaseModel):
@@ -33,3 +31,6 @@ class UpdateModuleSchema(BaseModel):
     description: Annotated[Union[str, None], Query(max_length=600)] = None
     video_url: Annotated[Union[HttpUrl, None], Query()] = None
     image: Annotated[Union[UploadFile, None], File()] = None
+
+class GetPaginationModuleSchema(GetPaginationSchema):
+    description: Annotated[Union[str, None], Path(max_length=50)] = None

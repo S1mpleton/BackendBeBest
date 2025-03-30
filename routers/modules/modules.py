@@ -1,11 +1,14 @@
-from fastapi import APIRouter, Path, Query, File, UploadFile
+from fastapi import APIRouter, Path
 from fastapi.params import Depends
-from pydantic import HttpUrl
 
-from typing import Union, Annotated
+from typing import Annotated
 
 from routers.modules.repository import ModulRepository
-from routers.modules.schemes import PaginationModuleSchema, CreateModuleSchema, GetModuleSchema, UpdateModuleSchema
+from routers.modules.schemes import PaginationModuleSchema, CreateModuleSchema, GetModuleSchema, UpdateModuleSchema, \
+    GetPaginationModuleSchema
+
+
+
 
 router = APIRouter(
     prefix="/modules",
@@ -20,15 +23,13 @@ router = APIRouter(
 )
 async def read_modules(
         id_course: Annotated[int, Path(ge=1)],
-        number_page: Annotated[Union[int, None], Path(ge=1)] = None,
-        quantity_on_page: Annotated[Union[int, None], Path(ge=1)] = None,
-        description: Annotated[Union[str, None], Path(max_length=50)] = None
+        pagination: Annotated[GetPaginationModuleSchema, Path()],
 ) -> PaginationModuleSchema:
-    if not number_page or not quantity_on_page:
-        number_page = 1
-        quantity_on_page = 30
+    if not all([pagination.number_page, pagination.number_page]):
+        pagination.number_page = 1
+        pagination.quantity_on_page = 30
 
-    return ModulRepository.get_by_page(id_course, number_page, quantity_on_page, description)
+    return ModulRepository.get_by_page(id_course, pagination)
 
 
 

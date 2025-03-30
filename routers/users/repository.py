@@ -17,6 +17,7 @@ from routers.users.schemes import GetUserSchema, UpdateUserSchema, CreateUserSch
 
 from ..courses import repository as repository_courses
 from ..images import repository as repository_images
+from .db_requests import UserRequestsDB
 
 
 
@@ -25,109 +26,87 @@ from ..images import repository as repository_images
 
 class UserRepository:
     @classmethod
-    def get_user_id_for_email(cls, email: EmailStr) -> int:
-        user_id = UsersModel.select(UsersModel.id).where(UsersModel.email == email).first()
-        if bool(user_id):
-            return user_id.__data__["id"]
-        return -1
+    def get_user_id_for_email(cls, email: Depends(EmailStr)) -> int:
+        select = UserRequestsDB()
+        select.sample_by_email(str(email))
+        user_model = select.get_first_user()
+
+        if not user_model:
+            return -1
+        return user_model.id
 
     @classmethod
     def check_email_for_used(cls, email: Depends(EmailStr)):
-        if cls.get_user_id_for_email(email) > 0:
+        user_id = cls.get_user_id_for_email(email)
+
+        if user_id > 0:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="This email is already in use"
             )
 
     @classmethod
-    def get_hashed_password(cls, user: GetUserSchema):
-        return (
-            UsersModel.select(
-                UsersModel.hashed_password
-            ).where(UsersModel.id == user.id)
-            .first()
-        ).__data__["hashed_password"]
+    def get_hashed_password(cls, user_id: int) -> str:
+        select = UserRequestsDB()
+        select.sample_by_id(user_id)
+
+        user_model = select.get_first_user()
+        return user_model.hashed_password
+
 
     @classmethod
-    def get_model_by_id(cls, id_user) -> UsersModel:
-        try:
-            return UsersModel.get_by_id(id_user)
-        except Exception as e:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not fount")
+    def get_image_schema_by_id(cls, user_id: int) -> FeaturedImageSchema:
+        return repository_images.ImagesRepository.get_image_schema(user_id, USER_TYPE)
 
     @classmethod
-    def get_image_request_by_model(cls, user: UsersModel) -> ModelSelect:
-        images = (
-            ImageUserModel.select(
-                ImageUserModel,
-                ImageFormatModel
-            )
-            .join(ImageFormatModel)
-            .where(ImageUserModel.object == user)
-        )
-
-        return images
+    def remove_image_by_id(cls, user_id: int):
+        repository_images.ImagesRepository.delete_image(user_id, USER_TYPE)
 
     @classmethod
-    def get_image_schema_by_model(cls, user: UsersModel) -> FeaturedImageSchema:
-        images = cls.get_image_request_by_model(user)
-
-        return get_featured_image(images)
-
-    @classmethod
-    def remove_image_by_model(cls, user: UsersModel):
-        images = cls.get_image_request_by_model(user)
-
-        for image in images:
-            file_path = get_image_path(
-                id_model=user.id,
-                name_model="user",
-                format_name=image.format.format_name
-            )
-
-            os.remove(file_path)
-            image.delete_instance(recursive=True, delete_nullable=True)
-
-    @classmethod
-    def save_images(cls, user: UsersModel, image_data: UploadFile):
+    def save_images(cls, user_id: int, image_data: UploadFile):
         repository_images.ImagesRepository.save_image(
-            id_model=user.id,
-            object_type=USER_TYPE,
+            model_id=user_id,
+            model_type=USER_TYPE,
             image_data=image_data
         )
-
 
 
 
     @classmethod
     def get_user_for_email(cls, email: Depends(EmailStr)) -> GetUserSchema:
         user_id = cls.get_user_id_for_email(email)
+
         if user_id < 0:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email"
             )
 
-        user = cls.get_by_id(user_id)
-        return user
+        return cls.get_by_id(user_id)
 
     @classmethod
     def get_all(cls) -> list[GetUserSchema]:
-        response = []
-        users_id = UsersModel.select(UsersModel.id)
-        for user_id in users_id:
-            user = cls.get_by_id(user_id)
-            response.append(user)
+        select = UserRequestsDB()
 
+        response = []
+        for user in select.get_iterator_user():
+            response.append(cls.get_by_id(user.id))
         return response
 
     @classmethod
-    def get_by_id(cls, id_user: int) -> GetUserSchema:
-        user = cls.get_model_by_id(id_user)
-        featured_image = cls.get_image_schema_by_model(user)
+    def get_by_id(cls, user_id: int) -> GetUserSchema:
+        select = UserRequestsDB()
+        select.sample_by_id(user_id)
+        user = select.get_first_user()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User not found"
+            )
+
+        featured_image = cls.get_image_schema_by_id(user_id)
 
         user.__data__["featuredImage"] = featured_image
-
         return GetUserSchema(**user.__data__)
 
     @classmethod
@@ -142,55 +121,54 @@ class UserRepository:
             created_at=datetime.date.today()
         )
 
-        featured_image = cls.get_image_schema_by_model(user)
+        featured_image = cls.get_image_schema_by_id(user.id)
 
         user.__data__["featuredImage"] = featured_image
-
         return GetUserSchema(**user.__data__)
 
     @classmethod
-    def delete_by_id(cls, id_user):
-        user = cls.get_model_by_id(id_user)
+    def delete_by_id(cls, user_id):
+        cls.get_by_id(user_id)
 
-        cls.remove_image_by_model(user)
+        select = UserRequestsDB()
+        select.sample_by_id(user_id)
 
-        courses = CoursesModel.select().where(CoursesModel.creator == user)
+        courses = repository_courses.CourseRepository.get_by_creator_id(user_id)
         for course in courses:
             repository_courses.CourseRepository.delete_by_id(course.id)
 
-        user.delete_instance(recursive=True, delete_nullable=True)
+        cls.remove_image_by_id(user_id)
+        select.delete()
 
     @classmethod
-    def update_user(cls, id_user: int, data: UpdateUserSchema) -> GetUserSchema:
-        user = cls.get_model_by_id(id_user)
+    def update_user(cls, user_id: int, data: UpdateUserSchema) -> GetUserSchema:
         cls.check_email_for_used(data.email)
+        cls.get_by_id(user_id)
 
-
+        select = UserRequestsDB()
+        select.sample_by_id(user_id)
 
         if data.image:
             check_image_format(data.image.content_type)
-            cls.remove_image_by_model(user)
-            cls.save_images(user, data.image)
+            cls.remove_image_by_id(select.get_first_user().id)
+            cls.save_images(select.get_first_user().id, data.image)
 
         if data.age:
-            user.age = data.age
-
-        if data.name:
-            user.name = data.name
-
-        if data.email:
-            user.email = data.email
-
-        if data.password:
-            user.hashed_password = get_password_hash(data.password)
+            select.update_age(data.age)
 
         if data.sex:
-            user.sex = data.sex
+            select.update_sex(data.sex)
 
-        user.save()
+        if data.name:
+            select.update_name(data.name)
 
-        featured_image = cls.get_image_schema_by_model(user)
-        user.__data__["featuredImage"] = featured_image
+        if data.email:
+            select.update_email(str(data.email))
 
-        return GetUserSchema(**user.__data__)
+        if data.password:
+            select.update_password(data.password)
+
+        select.save()
+
+        return cls.get_by_id(select.get_first_user().id)
 

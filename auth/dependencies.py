@@ -41,7 +41,7 @@ def validate_auth_user(
 ) -> GetUserSchema:
     user = UserRepository.get_user_for_email(username)
 
-    hashed_password = UserRepository.get_hashed_password(user)
+    hashed_password = UserRepository.get_hashed_password(user.id)
     if verify_password(plain_password=password, hashed_password=hashed_password):
         return user
 

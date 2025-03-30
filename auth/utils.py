@@ -41,7 +41,6 @@ def decode_jwt(
         algorithm: str = AuthJWT().algorithm
 ):
     decoded = jwt.decode(jwt_token, public_key, algorithms=[algorithm])
-    print("DECODE JWT", decoded)
     return decoded
 
 

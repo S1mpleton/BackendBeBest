@@ -1,12 +1,17 @@
 import datetime
+from enum import Enum
 from typing import Annotated, Union
 
 from fastapi import UploadFile, File, Path, Query
 from pydantic import BaseModel, Field
 
-from routers.dependencies import FeaturedImageSchema, PaginationSchema
+from routers.dependencies import FeaturedImageSchema, PaginationSchema, GetPaginationSchema
 
 
+class CategoryCourse(str, Enum):
+    health = "Health"
+    finance = "Finance"
+    management = "Management"
 
 class CourseSchema(BaseModel):
     creator_id: int = Field(ge=1)
@@ -30,3 +35,8 @@ class UpdateCourseSchema(BaseModel):
     title: Annotated[Union[str, None], Field(max_length=50)] = None
     description: Annotated[Union[str, None], Field(max_length=600)] = None
     image: Annotated[Union[UploadFile, None], File()] = None
+
+
+class GetPaginationCourseSchema(GetPaginationSchema):
+    description: Annotated[Union[str, None], Path(max_length=50)] = None
+    category: Annotated[Union[CategoryCourse, None], Field()] = None

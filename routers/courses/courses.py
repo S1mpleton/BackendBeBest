@@ -2,8 +2,10 @@ from fastapi import APIRouter, Path, UploadFile, File, Depends, Query
 
 from typing import Annotated, Union
 
+from dataBase import CoursesModel
 from routers.courses.repository import CourseRepository
-from routers.courses.schemes import PaginationCourseSchema, GetCourseSchema, CreateCourseSchema, UpdateCourseSchema
+from routers.courses.schemes import PaginationCourseSchema, GetCourseSchema, CreateCourseSchema, UpdateCourseSchema, \
+    GetPaginationCourseSchema
 
 router = APIRouter(
     prefix="/courses",
@@ -17,15 +19,13 @@ router = APIRouter(
     summary="Get page courses for description"
 )
 async def read_course_for_id(
-        number_page: Annotated[Union[int, None], Query(ge=1)] = None,
-        quantity_on_page: Annotated[Union[int, None], Query(ge=1)] = None,
-        description: Annotated[Union[str, None], Query(max_length=50)] = None
+        pagination: Annotated[GetPaginationCourseSchema, Query()]
 )-> PaginationCourseSchema:
-    if not number_page or not quantity_on_page:
-        number_page = 1
-        quantity_on_page = 30
+    if not pagination.number_page or not pagination.quantity_on_page:
+        pagination.number_page = 1
+        pagination.quantity_on_page = 30
 
-    return CourseRepository.get_by_page(number_page, quantity_on_page, description)
+    return CourseRepository.get_by_page(pagination)
 
 
 
@@ -36,7 +36,12 @@ async def read_course_for_id(
 async def read_course_for_id(id_course: Annotated[int, Path(ge=1)]) -> GetCourseSchema:
     return CourseRepository.get_by_id(id_course)
 
-
+@router.get(
+    "/getAll",
+    summary="Get all courses"
+)
+async def read_all_courses() -> list[GetCourseSchema]:
+    return CourseRepository.get_all()
 
 
 @router.get(

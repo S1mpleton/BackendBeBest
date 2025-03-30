@@ -1,127 +1,93 @@
 import datetime
-import os
 from math import ceil
 
-from PIL import Image
-from fastapi import HTTPException, status, UploadFile
-from peewee import ModelSelect, SQL, fn
-from pydantic import HttpUrl
+from fastapi import UploadFile, HTTPException, status
 
-from dataBase import ModuleModel, ImageModuleModel, ImageFormatModel
-from routers.dependencies import FeaturedImageSchema, check_image_format, PaginationSchema, get_image_path, \
-    get_featured_image, MODULE_TYPE
-from routers.modules.schemes import GetModuleSchema, CreateModuleSchema, PaginationModuleSchema, UpdateModuleSchema
+from dataBase import ModuleModel
+from routers.dependencies import (
+    FeaturedImageSchema, check_image_format, PaginationSchema, MODULE_TYPE, COURSE_TYPE
+)
+from routers.modules.schemes import (
+    GetModuleSchema, CreateModuleSchema, PaginationModuleSchema, UpdateModuleSchema, GetPaginationModuleSchema
+)
 
 from ..courses import repository as repository_courses
 from ..images import repository as repository_images
+from .db_requests import ModuleRequestsDB
 
 
 
 class ModulRepository:
     @classmethod
-    def get_module_by_id(cls, id_module) -> ModuleModel:
-        try:
-            return ModuleModel.get_by_id(id_module)
-        except Exception as e:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Module not fount")
+    def get_image_schema_by_id(cls, module_id: int) -> FeaturedImageSchema:
+        return repository_images.ImagesRepository.get_image_schema(module_id, MODULE_TYPE)
 
     @classmethod
-    def get_image_request_by_modul(cls, module: ModuleModel) -> ModelSelect:
-        images = (
-            ImageModuleModel.select(
-                ImageModuleModel,
-                ImageFormatModel
-            )
-            .join(ImageFormatModel)
-            .where(ImageModuleModel.object == module)
-        )
-
-        return images
+    def remove_image_by_id(cls, module_id: int):
+        repository_images.ImagesRepository.delete_image(module_id, MODULE_TYPE)
 
     @classmethod
-    def get_image_by_module(cls, module: ModuleModel) -> FeaturedImageSchema:
-        images = cls.get_image_request_by_modul(module)
-
-        return get_featured_image(images)
-
-    @classmethod
-    def remove_image_by_module(cls, module: ModuleModel):
-        images = cls.get_image_request_by_modul(module)
-
-        for image in images:
-            file_path = get_image_path(
-                id_model=module.id,
-                name_model="module",
-                format_name=image.format.format_name
-            )
-
-            os.remove(file_path)
-            image.delete_instance(recursive=True, delete_nullable=True)
-
-    @classmethod
-    def save_images(cls, module: ModuleModel, image_data: UploadFile):
+    def save_images(cls, module_id: int, image_data: UploadFile):
         repository_images.ImagesRepository.save_image(
-            id_model=module.id,
-            object_type=MODULE_TYPE,
+            model_id=module_id,
+            model_type=MODULE_TYPE,
             image_data=image_data
         )
 
 
 
-    @classmethod
-    def get_by_id(cls, id_module: int) -> GetModuleSchema:
-        module = cls.get_module_by_id(id_module)
-
-        featured_image = cls.get_image_by_module(module)
-
-        module.__data__["featuredImage"] = featured_image
-        module.__data__["course_id"] = module.__data__.pop("course")
-
-        return GetModuleSchema(**module.__data__)
 
     @classmethod
-    def get_by_page(
-            cls, id_course: int,
-            number_page: int,
-            quantity_on_page: int,
-            description: str
-    ) -> PaginationModuleSchema:
+    def get_by_id(cls, module_id: int) -> GetModuleSchema:
+        select = ModuleRequestsDB()
+        select.sample_by_id(module_id)
+        modul = select.get_first_modul()
 
-        total_elements = ceil(
-            ModuleModel
-            .select(ModuleModel.id)
-            .where(ModuleModel.course == id_course)
-            .count()
-        )
+        if not modul:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Modul not found"
+            )
+
+        featured_image = cls.get_image_schema_by_id(module_id)
+
+
+        modul.__data__["featuredImage"] = featured_image
+        modul.__data__[f"{COURSE_TYPE}_id"] = modul.__data__.pop(COURSE_TYPE)
+
+        return GetModuleSchema(**modul.__data__)
+
+    @classmethod
+    def get_all_by_course_id(cls, course_id: int) -> list[GetModuleSchema]:
+        select = ModuleRequestsDB()
+        select.sample_by_course_id(course_id)
+
+        data_module = []
+        for module in select.get_iterator_modul():
+            data_module.append(cls.get_by_id(module.id))
+
+        return data_module
+
+    @classmethod
+    def get_by_page(cls, course_id: int, pagination: GetPaginationModuleSchema) -> PaginationModuleSchema:
+        select = ModuleRequestsDB()
+        select.sample_by_course_id(course_id)
+        select.order_by_description(pagination.description)
+
+        total_elements = select.get_count()
+
+        select.sample_by_pagination(pagination.number_page, pagination.quantity_on_page)
 
         modules_data = []
-        modules = (
-            ModuleModel
-            .select(
-                ModuleModel,
-                fn.ifNotNull(
-                    bool(description), fn.comparison(ModuleModel.title + ModuleModel.description, description)
-                ).alias('discount')
-            )
-            .where(ModuleModel.course == id_course)
-            .limit(quantity_on_page).offset((number_page - 1) * quantity_on_page)
-            .order_by(SQL("discount").desc())
-        )
-
-
-        for module in modules:
-            featured_image = cls.get_image_by_module(module)
-
-            module.__data__["featuredImage"] = featured_image
-            module.__data__["course_id"] = module.__data__.pop("course")
-
-            modules_data.append(GetModuleSchema(**module.__data__))
+        for module in select.get_iterator_modul():
+            module_schema = cls.get_by_id(module.id)
+            modules_data.append(module_schema)
 
         return PaginationModuleSchema(
             data=modules_data,
             pagination=PaginationSchema(
-                current_page=number_page,
-                total_pages=ceil(total_elements / quantity_on_page),
+                current_page=pagination.number_page,
+                total_pages=ceil(total_elements / pagination.quantity_on_page),
                 total_elements=total_elements
             )
         )
@@ -129,59 +95,51 @@ class ModulRepository:
     @classmethod
     def create(cls, data: CreateModuleSchema) -> GetModuleSchema:
         check_image_format(data.image.content_type)
-        course = repository_courses.CourseRepository.get_model_by_id(data.course_id)
+        course = repository_courses.CourseRepository.get_by_id(data.course_id)
 
         module = ModuleModel.create(
-            course_id=course,
+            course_id=course.id,
             title=data.title,
             description=data.description,
             video_URL=data.video_URL,
             created_at=datetime.date.today()
         )
 
-        cls.save_images(module, data.image)
-
-        featured_image = cls.get_image_by_module(module)
-
-        module.__data__["featuredImage"] = featured_image
-        module.__data__["course_id"] = module.__data__.pop("course")
-
-        return GetModuleSchema(**module.__data__)
+        cls.save_images(module.id, data.image)
+        return cls.get_by_id(module.id)
 
     @classmethod
-    def delete_by_id(cls, id_module):
-        module = cls.get_module_by_id(id_module)
+    def delete_by_id(cls, module_id):
+        request = ModuleRequestsDB()
+        request.sample_by_id(module_id)
 
-        cls.remove_image_by_module(module)
-
-        module.delete_instance(recursive=True, delete_nullable=True)
+        cls.remove_image_by_id(request.get_first_modul().id)
+        request.delete()
 
     @classmethod
     def update_module(cls, data: UpdateModuleSchema) -> GetModuleSchema:
-        module = cls.get_module_by_id(data.id)
-        check_image_format(data.image.content_type)
+        cls.get_by_id(data.id)
 
-        if data.title:
-            module.title = data.title
-
-        if data.description:
-            module.description = data.description
-
-        if data.video_url:
-            module.video_URL = data.video_url
+        select = ModuleRequestsDB()
+        select.sample_by_id(data.id)
 
         if data.image:
-            cls.remove_image_by_module(module)
-            cls.save_images(module, data.image)
+            check_image_format(data.image.content_type)
+            cls.remove_image_by_id(data.id)
+            cls.save_images(data.id, data.image)
 
-        module.save()
+        if data.title:
+            select.update_title(data.title)
 
-        featured_image = cls.get_image_by_module(module)
+        if data.description:
+            select.update_description(data.description)
 
-        module.__data__["featuredImage"] = featured_image
-        module.__data__["course_id"] = module.__data__.pop("course")
+        if data.video_url:
+            select.update_video_url(str(data.video_url))
 
-        return GetModuleSchema(**module.__data__)
 
+        select.save()
+
+        return cls.get_by_id(data.id)
 
 

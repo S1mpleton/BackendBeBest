@@ -19,6 +19,11 @@ class FeaturedImageSchema(BaseModel):
     original: Annotated[Union[str, None], Field()] = None
     small:  Annotated[Union[str, None], Field()] = None
 
+
+class GetPaginationSchema(BaseModel):
+    number_page: Annotated[Union[int, None], Field(ge=1)] = None
+    quantity_on_page: Annotated[Union[int, None], Field(ge=1)] = None
+
 class PaginationSchema(BaseModel):
     current_page: int
     total_pages: int
