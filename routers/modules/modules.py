@@ -23,7 +23,7 @@ router = APIRouter(
 )
 async def read_modules(
         id_course: Annotated[int, Path(ge=1)],
-        pagination: Annotated[GetPaginationModuleSchema, Path()],
+        pagination: Annotated[GetPaginationModuleSchema, Depends()],
 ) -> PaginationModuleSchema:
     if not all([pagination.number_page, pagination.number_page]):
         pagination.number_page = 1

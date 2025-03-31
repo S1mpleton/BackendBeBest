@@ -25,7 +25,6 @@ MAX_MODULES_IN_COURSE = 10
 
 
 def save_images(model_id: int, model_type: str):
-
     p = str(random.randint(1, 22)) + ".jpeg"
 
     for form in ImageFormatModel.select():
