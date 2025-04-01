@@ -31,7 +31,7 @@ class CourseRepository:
         repository_images.ImagesRepository.save_image(
             model_id=course_id,
             model_type=COURSE_TYPE,
-            image_data=image_data
+            image_data=image_data.file
         )
 
 

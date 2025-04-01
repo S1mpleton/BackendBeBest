@@ -67,7 +67,7 @@ class UserRepository:
         repository_images.ImagesRepository.save_image(
             model_id=user_id,
             model_type=USER_TYPE,
-            image_data=image_data
+            image_data=image_data.file
         )
 
 

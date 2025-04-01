@@ -31,7 +31,7 @@ class ModulRepository:
         repository_images.ImagesRepository.save_image(
             model_id=module_id,
             model_type=MODULE_TYPE,
-            image_data=image_data
+            image_data=image_data.file
         )
 
 

@@ -31,6 +31,8 @@ SMALL_FORMAT_IMAGE = ImageFormatSchema(
     height=300
 )
 
+LIST_FORMAT_IMAGE = [ORIGINAL_FORMAT_IMAGE, SMALL_FORMAT_IMAGE]
+
 
 
 
@@ -79,7 +81,7 @@ class UsersModel(BaseModel):
     hashed_password = CharField(null=False, max_length=800)
     role = CharField(null=False, max_length=25, default="user")
 
-    name = CharField(null=False, max_length=25, default="Гость")
+    name = CharField(null=False, max_length=100, default="Гость")
     age = IntegerField(null=True, default=None)
     sex = IntegerField(null=True, default=None)
 
@@ -178,7 +180,7 @@ if __name__ == "__main__":
     for category in CATEGORY_COURSES:
         CategoryModel.create(category=CATEGORY_COURSES.get(category))
 
-    for image_format in [ORIGINAL_FORMAT_IMAGE, SMALL_FORMAT_IMAGE]:
+    for image_format in LIST_FORMAT_IMAGE:
         ImageFormatModel.create(
             format_name=image_format.format_name,
             width=image_format.width,

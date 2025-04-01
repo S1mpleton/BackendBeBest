@@ -1,12 +1,12 @@
 import os
+from typing import BinaryIO, Union
+from pathlib import Path
 
 from PIL import Image
-from fastapi import UploadFile
 from fastapi.responses import FileResponse
 
 from config import IMAGE_DIR
-from dataBase import ImageFormatModel
-from dataBase.data import ORIGINAL_FORMAT_IMAGE
+from dataBase.data import ORIGINAL_FORMAT_IMAGE, ImageFormatModel
 from routers.dependencies import get_image_path, FeaturedImageSchema, get_featured_image
 from routers.images.db_requests import IMAGE_MODEL_BY_TYPE, ImageRequestsDB
 
@@ -20,7 +20,7 @@ class ImagesRepository:
         return get_featured_image(select.get_select())
 
     @classmethod
-    def save_image(cls, model_id: int, model_type: str, image_data: UploadFile):
+    def save_image(cls, model_id: int, model_type: str, image_data: Union[BinaryIO, Path]):
         for form in ImageFormatModel.select():
             file_path = get_image_path(
                 id_model=model_id,
@@ -28,7 +28,7 @@ class ImagesRepository:
                 format_name=form.format_name
             )
 
-            img = Image.open(image_data.file)
+            img = Image.open(image_data)
 
             if form.format_name != ORIGINAL_FORMAT_IMAGE.format_name:
                 img.thumbnail((form.width, form.height))

@@ -15,7 +15,7 @@ class UserRole(str, Enum):
 
 
 class UserSchema(BaseModel):
-    name: str = Field(max_length=25, default="Гость")
+    name: str = Field(max_length=100, default="Гость")
     email: EmailStr
 
 
