@@ -15,12 +15,12 @@ class UserRole(str, Enum):
 
 
 class UserSchema(BaseModel):
-    name: str = Field(max_length=100, default="Гость")
+    name: str = Field(max_length=150, default="Гость")
     email: EmailStr
 
 
 class CreateUserSchema(UserSchema):
-    password: str = Field(max_length=60)
+    password: str = Field(max_length=100)
 
 
 class GetUserSchema(UserSchema):
@@ -32,7 +32,7 @@ class GetUserSchema(UserSchema):
     featuredImage: FeaturedImageSchema
 
 class UpdateUserSchema(BaseModel):
-    name: Annotated[Union[str, None], Field(max_length=25)] = None
+    name: Annotated[Union[str, None], Field(max_length=150)] = None
     email: Annotated[Union[EmailStr, None], Field()] = None
     password: Annotated[Union[str, None], Field(max_length=60)] = None
     age: Annotated[Union[int, None], Field(ge=14, le=150)] = None

@@ -9,7 +9,7 @@ from routers.dependencies import FeaturedImageSchema, PaginationSchema, GetPagin
 
 class ModuleSchema(BaseModel):
     course_id: int = Field(ge=1)
-    title: str = Field(max_length=50, default="title")
+    title: str = Field(max_length=150, default="title")
     description: str = Field(max_length=600, default="description")
     video_URL: HttpUrl
 

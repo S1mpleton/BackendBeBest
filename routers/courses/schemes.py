@@ -15,7 +15,7 @@ class CategoryCourse(str, Enum):
 
 class CourseSchema(BaseModel):
     creator_id: int = Field(ge=1)
-    title: str = Field(max_length=50, default="title")
+    title: str = Field(max_length=150, default="title")
     description: str = Field(max_length=600, default="description")
 
 class GetCourseSchema(CourseSchema):
@@ -32,11 +32,11 @@ class PaginationCourseSchema(BaseModel):
 
 class UpdateCourseSchema(BaseModel):
     id: Annotated[int, Field(ge=1)]
-    title: Annotated[Union[str, None], Field(max_length=50)] = None
+    title: Annotated[Union[str, None], Field(max_length=150)] = None
     description: Annotated[Union[str, None], Field(max_length=600)] = None
     image: Annotated[Union[UploadFile, None], File()] = None
 
 
 class GetPaginationCourseSchema(GetPaginationSchema):
-    description: Annotated[Union[str, None], Path(max_length=50)] = None
+    description: Annotated[Union[str, None], Path(max_length=600)] = None
     category: Annotated[Union[CategoryCourse, None], Field()] = None

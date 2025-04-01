@@ -49,16 +49,16 @@ TYPE_NAME_PHOTOS = {
 
 
 
-COUNT_USERS = 10
+COUNT_USERS = 100
 CHANCE_USER_PHOTO_CREATE = 1/5
 
 # if user creates a course, he creates between MIN_COURSE_ON_USER and MAX_COURSE_ON_USER courses
-CHANCE_USER_COURSE_CREATE = 1/10
+CHANCE_USER_COURSE_CREATE = 1/8
 MIN_COURSE_ON_USER = 1
 MAX_COURSE_ON_USER = 4
 
 MIN_MODULES_IN_COURSE = 0
-MAX_MODULES_IN_COURSE = 10
+MAX_MODULES_IN_COURSE = 18
 
 
 
@@ -143,9 +143,3 @@ def run(how_users: int):
 
 if __name__ == "__main__":
     run(COUNT_USERS)
-
-
-    # print(fake.name())
-    # print(fake.name())
-    # print(fake.text(max_nb_chars=300))
-    # print(fake.catch_phrase())

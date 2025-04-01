@@ -93,7 +93,7 @@ class UsersModel(BaseModel):
 class CoursesModel(BaseModel):
     creator = ForeignKeyField(UsersModel)
 
-    title = CharField(max_length=50)
+    title = CharField(max_length=150)
     description = CharField(max_length=600)
 
     created_at = DateField(null=False, default=datetime.date.today)
@@ -104,7 +104,7 @@ class CoursesModel(BaseModel):
 class ModuleModel(BaseModel):
     course = ForeignKeyField(CoursesModel)
 
-    title = CharField(max_length=50)
+    title = CharField(max_length=150)
     description = CharField(max_length=600)
 
     video_URL = CharField(max_length=500)
