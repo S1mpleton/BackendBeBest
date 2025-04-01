@@ -1,25 +1,22 @@
-
-from typing import Union
-from enum import Enum
-from datetime import date
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, EmailStr, ConfigDict
 
-from dataBase.data import db, UsersModel
+from routers.users.users import router as users_router
+from routers.modules.modules import router as modules_router
+from routers.courses.courses import router as courses_router
+from routers.images.images import router as images_router
+from routers.purchase import router as purchase_router
 
-#GVT
-#токен
-#UI
-#Яндекс трекер
+from auth import auth
 
-class UserSchema(BaseModel):
-    name: str
-    age: int = Field(ge=0, le=150)
-    mail: EmailStr
-    role: Union[str, None]
-    password: str
+
+
+
+SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 
@@ -27,72 +24,25 @@ class UserSchema(BaseModel):
 app = FastAPI()
 
 
-@app.get(
-    "/users/get/all",
-    tags=["Users👩🏻"],
-    summary="Get all users"
+app.include_router(users_router)
+app.include_router(courses_router)
+app.include_router(modules_router)
+app.include_router(images_router)
+app.include_router(purchase_router)
+app.include_router(auth.router)
+
+
+origins = [
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-async def read_users():
-    all_users = []
-    for user in UsersModel.select():
-        all_users.append({
-            "ID": user.ID,
-            "name": user.Name,
-            "age": user.Age,
-            "mail": user.Mail,
-            "role": user.Role,
-            "password": user.Password,
-            "created_at": user.Created_at
-        })
-    return all_users
-
-
-@app.get(
-    "/users/get/id/{id_user}",
-    tags=["Users👩🏻"],
-    summary="Get user for ID"
-)
-async def read_user(id_user: int):
-    user = UsersModel.get(ID=id_user)
-    return {
-        "ID": user.ID,
-        "name": user.Name,
-        "age": user.Age,
-        "mail": user.Mail,
-        "role": user.Role,
-        "password": user.Password,
-        "created_at": user.Created_at
-    }
-
-
-@app.post("/users/create")
-async def create_user(new_user: UserSchema):
-    UsersModel(
-        Name = new_user.name,
-        Age = new_user.age,
-        Mail = new_user.mail,
-        Role = new_user.role,
-        Password = new_user.password,
-        Created_at = date.today()
-    ).save()
-    return {"status": "ok"}
-
-
-# class ModelName(str, Enum):
-#     alexnet = "alexn1et"
-#     resnet = "resnet"
-#     lenet = "lenet"
-
-# @app.get("/models/{model_name}")
-# async def get_model(model_name: ModelName):
-#     if model_name is ModelName.alexnet:
-#         return {"model_name": model_name, "message": "Deep Learning FTW!"}
-#
-#     if model_name.value == "lenet":
-#         return {"model_name": model_name, "message": "LeCNN all the images"}
-#
-#     return {"model_name": model_name, "message": "Have some residuals"}
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
