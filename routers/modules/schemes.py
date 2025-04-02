@@ -19,7 +19,7 @@ class GetModuleSchema(ModuleSchema):
     featuredImage: FeaturedImageSchema
 
 class CreateModuleSchema(ModuleSchema):
-    image: UploadFile = File()
+    image: Annotated[UploadFile, File()]
 
 class PaginationModuleSchema(BaseModel):
     data: list[GetModuleSchema]

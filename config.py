@@ -18,11 +18,6 @@ PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 
-
-
-
-
-
 class AuthJWT(BaseModel):
     private_key_path: Path = CERTS_DIR.joinpath("private.pem")
     public_key_path: Path = CERTS_DIR.joinpath("public.pem")

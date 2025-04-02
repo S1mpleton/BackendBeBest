@@ -1,3 +1,5 @@
+import os
+
 from peewee import *
 
 from fuzzywuzzy import fuzz
@@ -168,23 +170,32 @@ class ImageUserModel(ImageModel):
 
 
 
+def create_db(delete_previous=False, generate_data=False):
+    if DB_PATH.is_file():
+        if delete_previous:
+            os.remove(DB_PATH)
+    else:
+        with db:
+            db.create_tables([
+                UsersModel, CoursesModel, PurchasesModel,
+                ModuleModel, CategoryModel, BelongingCategoryModel,
+                ImageCourseModel, ImageModuleModel, ImageUserModel, ImageFormatModel
+            ])
 
-if __name__ == "__main__":
-    with db:
-        db.create_tables([
-            UsersModel, CoursesModel, PurchasesModel,
-            ModuleModel, CategoryModel, BelongingCategoryModel,
-            ImageCourseModel, ImageModuleModel, ImageUserModel, ImageFormatModel
-        ])
+        for category in CATEGORY_COURSES:
+            CategoryModel.create(category=CATEGORY_COURSES.get(category))
 
-    for category in CATEGORY_COURSES:
-        CategoryModel.create(category=CATEGORY_COURSES.get(category))
+        for image_format in LIST_FORMAT_IMAGE:
+            ImageFormatModel.create(
+                format_name=image_format.format_name,
+                width=image_format.width,
+                height=image_format.height,
+                description="Format"
+            )
 
-    for image_format in LIST_FORMAT_IMAGE:
-        ImageFormatModel.create(
-            format_name=image_format.format_name,
-            width=image_format.width,
-            height=image_format.height,
-            description="Format"
-        )
+
+    # if generate_data:
+
+
+
 

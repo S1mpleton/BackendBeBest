@@ -1,2 +1,4 @@
 .idea/
+resources/
+certs/
 __pycache__/
