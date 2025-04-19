@@ -14,7 +14,7 @@ class CategoryCourse(str, Enum):
     management = "Management"
 
 class CourseSchema(BaseModel):
-    creator_id: int = Field(ge=1)
+    # creator_id: int = Field(ge=1)
     title: str = Field(max_length=150, default="title")
     description: str = Field(max_length=600, default="description")
 

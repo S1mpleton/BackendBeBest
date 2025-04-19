@@ -1,14 +1,11 @@
-from fastapi import APIRouter, Path, Depends
+from fastapi import APIRouter, Path, Depends, HTTPException, status
 
 from typing import Annotated
 
 from auth.dependencies import UserGetterByTokenType
 from auth.utils import ACCESS_TOKEN_TYPE
 from routers.users.repository import UserRepository
-from routers.users.schemes import GetUserSchema, CreateUserSchema, UpdateUserSchema
-
-
-
+from routers.users.schemes import GetUserSchema, CreateUserSchema, UpdateUserSchema, UserRole
 
 router = APIRouter(
     prefix="/users",
@@ -32,7 +29,10 @@ async def get_authorized_user(
     "/getById/{id_user}",
     summary="Get user for ID"
 )
-async def read_user(id_user: Annotated[int, Path(ge=1)]) -> GetUserSchema:
+async def read_user(
+        id_user: Annotated[int, Path(ge=1)],
+         user: Annotated[GetUserSchema, Depends(UserGetterByTokenType(ACCESS_TOKEN_TYPE))]
+) -> GetUserSchema:
     return UserRepository.get_by_id(id_user)
 
 @router.get(
@@ -80,9 +80,18 @@ async def delete_user(
     "/deleteById/{id_user}",
     summary="Delete user by id, courses that was created this user, also deleted"
 )
-async def delete_user_by_id(id_user: Annotated[int, Path(ge=1)]):
-    UserRepository.delete_by_id(id_user)
-    return {"status": "ok"}
+async def delete_user_by_id(
+        id_user: Annotated[int, Path(ge=1)],
+        administrator: Annotated[GetUserSchema, Depends(UserGetterByTokenType(ACCESS_TOKEN_TYPE))]
+):
+    if administrator.role == UserRole.administrator:
+        UserRepository.delete_by_id(id_user)
+        return {"status": "ok"}
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="no access"
+    )
 
 
 
