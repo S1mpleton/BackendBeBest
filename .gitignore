@@ -1,4 +1,5 @@
 .idea/
 resources/
 certs/
+dataBase/data.db
 __pycache__/

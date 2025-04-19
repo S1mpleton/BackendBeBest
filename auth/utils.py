@@ -15,9 +15,9 @@ REFRESH_TOKEN_TYPE = "refresh"
 
 def encode_jwt(
         payload: dict,
-        private_key: str = AuthJWT().private_key_path.read_text(),
-        algorithm: str = AuthJWT().algorithm,
-        expire_minutes: int = AuthJWT().access_token_expire_minutes,
+        private_key: str = SETTINGS.auth_JWT.private_key_path.read_text(),
+        algorithm: str = SETTINGS.auth_JWT.algorithm,
+        expire_minutes: int = SETTINGS.auth_JWT.access_token_expire_minutes,
         expire_timedelta: Union[timedelta, None] = None
 ) -> str:
     to_encode = payload.copy()
@@ -37,8 +37,8 @@ def encode_jwt(
 
 def decode_jwt(
         jwt_token: Union[str, bytes],
-        public_key: str = AuthJWT().public_key_path.read_text(),
-        algorithm: str = AuthJWT().algorithm
+        public_key: str = SETTINGS.auth_JWT.public_key_path.read_text(),
+        algorithm: str = SETTINGS.auth_JWT.algorithm
 ):
     decoded = jwt.decode(jwt_token, public_key, algorithms=[algorithm])
     return decoded

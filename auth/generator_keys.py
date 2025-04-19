@@ -43,3 +43,5 @@ def generate_keys():
 
     with open(CERTS_DIR.joinpath("public.pem"), "wb") as file:
         file.write(pem_public)
+
+
