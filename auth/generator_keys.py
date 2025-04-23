@@ -45,3 +45,4 @@ def generate_keys():
         file.write(pem_public)
 
 
+generate_keys()
