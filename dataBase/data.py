@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from config import DB_DIR
 
-
+DELETE_PREVIOUS = False
 
 
 DB_PATH = DB_DIR.joinpath("data.db")
@@ -54,7 +54,8 @@ CATEGORY_COURSES = {
 }
 
 
-
+if DB_PATH.is_file() and DELETE_PREVIOUS:
+    os.remove(DB_PATH)
 
 db = SqliteDatabase(DB_PATH)
 
@@ -169,33 +170,21 @@ class ImageUserModel(ImageModel):
         db_table = "ImagesUser"
 
 
+if not DB_PATH.is_file():
+    with db:
+        db.create_tables([
+            UsersModel, CoursesModel, PurchasesModel,
+            ModuleModel, CategoryModel, BelongingCategoryModel,
+            ImageCourseModel, ImageModuleModel, ImageUserModel, ImageFormatModel
+        ])
 
-def create_db(delete_previous=False, generate_data=False):
-    if DB_PATH.is_file():
-        if delete_previous:
-            os.remove(DB_PATH)
-    else:
-        with db:
-            db.create_tables([
-                UsersModel, CoursesModel, PurchasesModel,
-                ModuleModel, CategoryModel, BelongingCategoryModel,
-                ImageCourseModel, ImageModuleModel, ImageUserModel, ImageFormatModel
-            ])
+    for category in CATEGORY_COURSES:
+        CategoryModel.create(category=CATEGORY_COURSES.get(category))
 
-        for category in CATEGORY_COURSES:
-            CategoryModel.create(category=CATEGORY_COURSES.get(category))
-
-        for image_format in LIST_FORMAT_IMAGE:
-            ImageFormatModel.create(
-                format_name=image_format.format_name,
-                width=image_format.width,
-                height=image_format.height,
-                description="Format"
-            )
-
-
-    # if generate_data:
-
-
-
-
+    for image_format in LIST_FORMAT_IMAGE:
+        ImageFormatModel.create(
+            format_name=image_format.format_name,
+            width=image_format.width,
+            height=image_format.height,
+            description="Format"
+        )
