@@ -34,12 +34,14 @@ app.include_router(auth.router)
 
 
 origins = [
-    "*"
+    "*",
+    "https://bebest.fun"
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
