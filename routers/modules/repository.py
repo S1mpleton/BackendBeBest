@@ -93,9 +93,16 @@ class ModulRepository:
         )
 
     @classmethod
-    def create(cls, data: CreateModuleSchema) -> GetModuleSchema:
-        check_image_format(data.image.content_type)
+    def create(cls, data: CreateModuleSchema, creator_id: int) -> GetModuleSchema:
         course = repository_courses.CourseRepository.get_by_id(data.course_id)
+        if not course in repository_courses.CourseRepository.get_by_creator_id(creator_id):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="no access"
+            )
+
+        check_image_format(data.image.content_type)
+
 
         module = ModuleModel.create(
             course_id=course.id,

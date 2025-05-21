@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import UploadFile
 from pydantic import HttpUrl
 
+
 from config import DB_DIR
 from dataBase.data import BelongingCategoryModel
 from routers.courses.repository import CourseRepository
@@ -68,7 +69,7 @@ class GenerateData:
         self.chance_user_photo_create = 1 / 5
 
         # if user creates a course,
-        self.chance_user_course_create = 1 / 8
+        self.chance_user_course_create = 1 / 6
         # he creates between self.min_course_quantity_on_user and self.max_course_quantity_on_use courses
         self.min_course_quantity_on_user = 1
         self.max_course_quantity_on_user = 4
@@ -100,7 +101,7 @@ class GenerateData:
             bin_file = io.BytesIO(file.read())
         return bin_file
 
-    def add_module(self, course_id: int):
+    def add_module(self, course_id: int, creator_id : int):
         path = self.get_rand_image_path(MODULE_TYPE)
         bin_file = self.get_bin_image(path)
 
@@ -115,14 +116,13 @@ class GenerateData:
                 content_type="image/jpeg")
         )
 
-        return ModulRepository.create(create_schema).id
+        return ModulRepository.create(create_schema, creator_id).id
 
     def add_course(self, user_id: int):
         path = self.get_rand_image_path(COURSE_TYPE)
         bin_file = self.get_bin_image(path)
 
         create_schema = CreateCourseSchema(
-            creator_id=user_id,
             title=self.fake.catch_phrase(),
             description=self.fake.text(max_nb_chars=500),
             image=CustomUploadFile(
@@ -133,7 +133,7 @@ class GenerateData:
         print("\tCOURSE: ")
         print("\t\t", f"title: {create_schema.title}")
 
-        return CourseRepository.create(create_schema).id
+        return CourseRepository.create(create_schema, user_id).id
 
     def add_user(self):
         path = self.get_rand_image_path(USER_TYPE)
@@ -182,7 +182,7 @@ class GenerateData:
                 GenerateData.add_category(course_id)
 
                 for _ in range(random.randint(self.min_modules_in_course, self.max_modules_in_course)):
-                    self.add_module(course_id)
+                    self.add_module(course_id, user_id)
 
 
 if __name__ == "__main__":

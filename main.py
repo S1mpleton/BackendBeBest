@@ -3,8 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import uvicorn
 
-from auth.generator_keys import generate_keys
-from dataBase.data import create_db
 from routers.users.users import router as users_router
 from routers.modules.modules import router as modules_router
 from routers.courses.courses import router as courses_router
@@ -36,12 +34,14 @@ app.include_router(auth.router)
 
 
 origins = [
-    "*"
+    "*",
+    "https://bebest.fun"
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -54,7 +54,4 @@ app.add_middleware(
 
 
 if __name__ == "__main__":
-    create_db()
-    generate_keys()
-
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -99,9 +99,9 @@ class CourseRepository:
         return course_data
 
     @classmethod
-    def create(cls, data: CreateCourseSchema) -> GetCourseSchema:
+    def create(cls, data: CreateCourseSchema, creator_id: int) -> GetCourseSchema:
         check_image_format(data.image.content_type)
-        user = repository_users.UserRepository.get_by_id(data.creator_id)
+        user = repository_users.UserRepository.get_by_id(creator_id)
 
         course = CoursesModel.create(
             creator_id=user.id,
@@ -114,8 +114,13 @@ class CourseRepository:
         return cls.get_by_id(course.id)
 
     @classmethod
-    def update_course(cls, data: UpdateCourseSchema) -> GetCourseSchema:
-        cls.get_by_id(data.id)
+    def update_course(cls, data: UpdateCourseSchema, user_id: int) -> GetCourseSchema:
+        if not cls.get_by_id(data.id) in cls.get_by_creator_id(user_id):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="no access"
+            )
+
 
         select = CourseRequestsDB()
         select.sample_by_id(data.id)
@@ -138,8 +143,12 @@ class CourseRepository:
         return cls.get_by_id(data.id)
 
     @classmethod
-    def delete_by_id(cls, course_id):
-        cls.get_by_id(course_id)
+    def delete_by_id(cls, course_id, user_id):
+        if not cls.get_by_id(course_id) in cls.get_by_creator_id(user_id):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="no access"
+            )
 
         select = CourseRequestsDB()
         select.sample_by_id(course_id)

@@ -1,0 +1,5 @@
+venv
+Dockerfile
+resources
+dataBase/data.db
+certs
